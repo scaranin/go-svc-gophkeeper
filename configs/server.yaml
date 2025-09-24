@@ -1,0 +1,11 @@
+server:
+  host: "localhost"
+  port: 50051
+  shutdown_timeout: "30s"
+
+database:
+  dsn: "postgres://postgres:admin@localhost:5432/postgres"
+
+auth:
+  jwt_secret: "tzoy_zhiv"
+  access_token_expiry: "15m"

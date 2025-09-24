@@ -7,7 +7,6 @@ import (
 )
 
 // Storage объединяет все интерфейсы репозиториев.
-// Это главный интерфейс, который будет использоваться в приложении.
 type Storage interface {
 	User() UserRepository
 	Secret() SecretRepository

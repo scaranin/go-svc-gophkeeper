@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package gophkeeper.v1;
+
+option go_package = "go-svc-gophkeeper/gen/go/v1;v1";
+
+import "google/protobuf/timestamp.proto";
+
+enum SecretType {
+  SECRET_TYPE_UNSPECIFIED = 0;
+  SECRET_TYPE_LOGIN = 1;
+  SECRET_TYPE_CARD = 2;
+  SECRET_TYPE_TEXT = 3;
+  SECRET_TYPE_BINARY = 4;
+}
+
+message Metadata {
+  string name = 1;
+  string description = 2;
+  string website = 3;
+  string tags = 4;
+  map<string, string> custom_fields = 5;
+}
+
+message SecretInfo {
+  string id = 1;
+  SecretType type = 2;
+  string name = 3;
+  Metadata metadata = 4;
+  int32 version = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp deleted_at = 8;
+}
+
+message LoginData {
+  string username = 1;
+  string password = 2;
+  string url = 3;
+  string notes = 4;
+}
+
+message CardData {
+  string number = 1;
+  string holder = 2;
+  string expiry = 3;
+  string cvv = 4;
+  string pin = 5;
+  string notes = 6;
+}
+
+message TextData {
+  string content = 1;
+  string notes = 2;
+}
+
+message BinaryData {
+  string filename = 1;
+  string mime_type = 2;
+  int64 size = 3;
+  string notes = 4;
+}
+
+message SecretData {
+  oneof data {
+    bytes encrypted_login_data = 1;
+    bytes encrypted_card_data = 2;
+    bytes encrypted_text_data = 3;
+    BinaryData binary_info = 4;
+  }
+}
+
+message ErrorResponse {
+  string code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+}
+
+message SyncState {
+  google.protobuf.Timestamp last_sync = 1;
+  int32 total_secrets = 2;
+  int32 updated_secrets = 3;
+  bool requires_full_sync = 4;
+}
+
+message Empty {}
+
+message HealthCheckResponse {
+  string status = 1;
+  string version = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
