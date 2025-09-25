@@ -54,3 +54,8 @@ func (s *Store) Secret() storage.SecretRepository {
 func (s *Store) Close() {
 	s.pool.Close()
 }
+
+// Ping проверяет подключение к БД
+func (s *Store) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}
