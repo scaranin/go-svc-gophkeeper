@@ -35,7 +35,7 @@ func (s *Store) CreateSecret(ctx context.Context, secret *models.Secret) (int, e
 		"type":           secret.Type,
 		"name":           secret.Name,
 		"metadata":       secret.Metadata,
-		"enctypted_data": secret.EncryptedData,
+		"encrypted_data": secret.EncryptedData,
 		"version":        secret.Version,
 	}
 
@@ -146,7 +146,7 @@ func (s *Store) UpdateSecret(ctx context.Context, secret *models.Secret) error {
 		"type":           secret.Type,
 		"name":           secret.Name,
 		"metadata":       secret.Metadata,
-		"enctypted_data": secret.EncryptedData,
+		"encrypted_data": secret.EncryptedData,
 		"version":        secret.Version,
 		"deleted_at":     secret.DeletedAt,
 		"id":             secret.ID,

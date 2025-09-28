@@ -21,7 +21,7 @@ func NewService(userRepo UserRepository, secretRepo SecretRepository, encryptor 
 	}
 }
 
-// Интерфейсы для зависимостей
+// UserRepository интерфейс пользователей
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (int, error)
 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
@@ -30,6 +30,7 @@ type UserRepository interface {
 	DeleteUser(ctx context.Context, id int) error
 }
 
+// UserRepository интерфейс секретов
 type SecretRepository interface {
 	CreateSecret(ctx context.Context, secret *models.Secret) (int, error)
 	GetSecretByID(ctx context.Context, id, userID int) (*models.Secret, error)
@@ -38,6 +39,7 @@ type SecretRepository interface {
 	DeleteSecret(ctx context.Context, id, userID int) error
 }
 
+// UserRepository интерфейс шифрования
 type Encryptor interface {
 	Encrypt(data []byte) ([]byte, error)
 	Decrypt(encryptedData []byte) ([]byte, error)

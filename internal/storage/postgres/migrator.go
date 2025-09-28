@@ -11,11 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresMigrator обертка для миграции Postgres
 type PostgresMigrator struct {
 	pool           *pgxpool.Pool
 	migrationsPath string
 }
 
+// RunMigrations запускает миграцию при отсутствии таблиц в БД
 func (m *PostgresMigrator) RunMigrations(ctx context.Context) error {
 	requiredTables := []string{"users", "secrets"}
 	allTablesExist := true
@@ -78,6 +80,7 @@ func (m *PostgresMigrator) applyAllMigrations(ctx context.Context) error {
 	return nil
 }
 
+// CheckSchema проверяет таблицы на схеме
 func (m *PostgresMigrator) CheckSchema(ctx context.Context) error {
 	requiredTables := []string{"users", "secrets"}
 

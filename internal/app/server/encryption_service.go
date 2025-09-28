@@ -12,6 +12,7 @@ type EncryptionService struct {
 	key []byte
 }
 
+// NewEncryptionService создает сервис шифрования
 func NewEncryptionService(key string) (*EncryptionService, error) {
 	keyBytes := []byte(key)
 
@@ -20,6 +21,7 @@ func NewEncryptionService(key string) (*EncryptionService, error) {
 	}, nil
 }
 
+// Encrypt шифруем
 func (s *EncryptionService) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
@@ -40,6 +42,7 @@ func (s *EncryptionService) Encrypt(data []byte) ([]byte, error) {
 	return encrypted, nil
 }
 
+// Decrypt расшифруем
 func (s *EncryptionService) Decrypt(encryptedData []byte) ([]byte, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {

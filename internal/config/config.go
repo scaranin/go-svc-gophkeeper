@@ -32,5 +32,5 @@ type AuthConfig struct {
 
 // EncryptionConfig содержит настройки шифрования
 type EncryptionConfig struct {
-	Key string `yaml:"key" env:"ENCRYPTION_KEY" env-default:"lf989jkj9f09dfis0dkf09i0fw9kf0skd0f"`
+	Key string `yaml:"key" env:"ENCRYPTION_KEY" env-default:"lf989jkj9f09dfis0dkf09i0fw9kf0sk"`
 }

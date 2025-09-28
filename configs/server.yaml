@@ -4,8 +4,11 @@ server:
   shutdown_timeout: "30s"
 
 database:
-  dsn: "postgres://postgres:admin@localhost:5432/postgres"
+  dsn: "postgres://postgres:admin@localhost:5432/gophkeeper?sslmode=disable"
 
 auth:
   jwt_secret: "tzoy_zhiv"
   access_token_expiry: "15m"
+
+encryption:
+  key: "lf989jkj9f09dfis0dkf09i0fw9kf0sk"

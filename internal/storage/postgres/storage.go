@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"go-svc-gophkeeper/internal/storage"
@@ -10,16 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// _ Проверка на этапе компиляции, что наша структура реализует интерфейс.
 var _ storage.Storage = (*Store)(nil)
 
-// Store реализует интерфейс storage.Storage.
 type Store struct {
 	pool     *pgxpool.Pool
 	migrator *PostgresMigrator
 }
 
-// New - конструктор хранилища.
 func New(dsn string) (*Store, error) {
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -38,7 +37,26 @@ func New(dsn string) (*Store, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &Store{pool: pool}, nil
+	_, filename, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(filename), "../../..")
+	migrationsPath := filepath.Join(projectRoot, "migrations", "postgres")
+
+	migrator := &PostgresMigrator{
+		pool:           pool,
+		migrationsPath: migrationsPath,
+	}
+
+	store := &Store{
+		pool:     pool,
+		migrator: migrator,
+	}
+
+	if err := store.Migrate(ctx); err != nil {
+		store.Close()
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return store, nil
 }
 
 // Migrate запускает миграции БД

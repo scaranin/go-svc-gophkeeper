@@ -16,6 +16,7 @@ type AuthService struct {
 	jwtManager *auth.JWTManager
 }
 
+// NewAuthService создание сервиса авторизации
 func NewAuthService(userRepo UserRepository, jwtManager *auth.JWTManager) *AuthService {
 	return &AuthService{
 		userRepo:   userRepo,
@@ -23,6 +24,7 @@ func NewAuthService(userRepo UserRepository, jwtManager *auth.JWTManager) *AuthS
 	}
 }
 
+// Register регистрация пользователя
 func (s *AuthService) Register(ctx context.Context, login, password string) (*models.User, string, error) {
 	if len(login) < 3 || len(password) < 8 {
 		return nil, "", fmt.Errorf("login min 3 chars, password min 8 chars")
@@ -62,6 +64,7 @@ func (s *AuthService) Register(ctx context.Context, login, password string) (*mo
 	return user, token, nil
 }
 
+// Login авторизация пользователя
 func (s *AuthService) Login(ctx context.Context, login, password string) (*models.User, string, error) {
 	if login == "" || password == "" {
 		return nil, "", fmt.Errorf("login and password required")
@@ -88,6 +91,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (*model
 	return user, token, nil
 }
 
+// ValidateToken проверка токена
 func (s *AuthService) ValidateToken(token string) (int, error) {
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {

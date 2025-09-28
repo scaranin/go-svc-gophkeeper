@@ -4,11 +4,31 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Load загружает конфигурацию из файла и переменных окружения
 func Load(configPath string) (*Config, error) {
 	var cfg Config
+
+	if configPath == "" {
+		configPath = findConfigFile()
+		if configPath == "" {
+			return &cfg, nil
+		}
+	}
+
+	file, err := os.Open(configPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
+	if err := decoder.Decode(&cfg); err != nil {
+		return nil, err
+	}
 
 	return &cfg, nil
 }
@@ -16,12 +36,8 @@ func Load(configPath string) (*Config, error) {
 // findConfigFile ищет конфигурационный файл в стандартных местах
 func findConfigFile() string {
 	possiblePaths := []string{
-		"./config.yaml",
-		"./config.yml",
-		"./config/config.yaml",
-		"./config/config.yml",
-		"/etc/gophkeeper/config.yaml",
-		"~/.config/gophkeeper/config.yaml",
+		"./configs/server.yaml",
+		"./server.yaml",
 	}
 
 	for _, path := range possiblePaths {

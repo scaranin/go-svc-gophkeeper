@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "go-svc-gophkeeper/internal/transport/grpc/server"
 
 func main() {
-	fmt.Println("Hello, world!")
+	server.RunServer()
 }
