@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+
+	"go-svc-gophkeeper/internal/auth"
 	"go-svc-gophkeeper/internal/models"
 )
 
@@ -12,17 +14,20 @@ type Service struct {
 }
 
 // NewService создает новый экземпляр сервиса
-func NewService(userRepo UserRepository, secretRepo SecretRepository, encryptor Encryptor) *Service {
+func NewService(userRepo UserRepository, secretRepo SecretRepository, encryptor Encryptor, jwtManager *auth.JWTManager) *Service {
 	return &Service{
-		Auth:   NewAuthService(userRepo),
+		Auth:   NewAuthService(userRepo, jwtManager),
 		Secret: NewSecretService(secretRepo, encryptor),
 	}
 }
 
+// Интерфейсы для зависимостей
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (int, error)
 	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
 	GetUserByID(ctx context.Context, id int) (*models.User, error)
+	UpdateUser(ctx context.Context, user *models.User) error
+	DeleteUser(ctx context.Context, id int) error
 }
 
 type SecretRepository interface {

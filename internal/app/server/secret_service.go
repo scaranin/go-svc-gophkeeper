@@ -21,7 +21,6 @@ func NewSecretService(secretRepo SecretRepository, encryptor Encryptor) *SecretS
 
 // CreateSecret создает новый секрет
 func (s *SecretService) CreateSecret(ctx context.Context, userID int, secretType models.SecretType, name string, data []byte, metadata []byte) (*models.Secret, error) {
-	// Шифрование данных
 	encryptedData, err := s.encryptor.Encrypt(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt data: %w", err)
@@ -52,13 +51,11 @@ func (s *SecretService) GetSecret(ctx context.Context, secretID, userID int) (*m
 		return nil, fmt.Errorf("failed to get secret: %w", err)
 	}
 
-	// Расшифровка данных
 	decryptedData, err := s.encryptor.Decrypt(secret.EncryptedData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
 
-	// Создаем копию с расшифрованными данными для возврата
 	result := *secret
 	result.EncryptedData = decryptedData
 
