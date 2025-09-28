@@ -12,10 +12,12 @@ type EncryptionService struct {
 	key []byte
 }
 
-func NewEncryptionService(key []byte) *EncryptionService {
+func NewEncryptionService(key string) (*EncryptionService, error) {
+	keyBytes := []byte(key)
+
 	return &EncryptionService{
-		key: key,
-	}
+		key: keyBytes,
+	}, nil
 }
 
 func (s *EncryptionService) Encrypt(data []byte) ([]byte, error) {

@@ -6,9 +6,10 @@ import (
 
 // Config главная конфигурационная структура
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Auth     AuthConfig     `yaml:"auth"`
+	Server     ServerConfig     `yaml:"server"`
+	Database   DatabaseConfig   `yaml:"database"`
+	Auth       AuthConfig       `yaml:"auth"`
+	Encryption EncryptionConfig `yaml:"encryption"`
 }
 
 // ServerConfig содержит настройки gRPC сервера
@@ -25,6 +26,11 @@ type DatabaseConfig struct {
 
 // AuthConfig содержит настройки аутентификации
 type AuthConfig struct {
-	JWTSecret         string        `yaml:"jwt_secret" env:"AUTH_JWT_SECRET" env-default:"your-super-secret-jwt-key"`
+	JWTSecret         string        `yaml:"jwt_secret" env:"AUTH_JWT_SECRET" env-default:"TZOY_ZHIV"`
 	AccessTokenExpiry time.Duration `yaml:"access_token_expiry" env:"AUTH_ACCESS_TOKEN_EXPIRY" env-default:"15m"`
+}
+
+// EncryptionConfig содержит настройки шифрования
+type EncryptionConfig struct {
+	Key string `yaml:"key" env:"ENCRYPTION_KEY" env-default:"lf989jkj9f09dfis0dkf09i0fw9kf0skd0f"`
 }

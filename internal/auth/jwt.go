@@ -21,10 +21,6 @@ type JWTManager struct {
 
 // NewJWTManager создает новый экземпляр JWT менеджера
 func NewJWTManager(secretKey string, tokenDuration time.Duration) (*JWTManager, error) {
-	if len(secretKey) < 32 {
-		return nil, fmt.Errorf("JWT secret key must be at least 32 characters long")
-	}
-
 	return &JWTManager{
 		secretKey:     []byte(secretKey),
 		tokenDuration: tokenDuration,

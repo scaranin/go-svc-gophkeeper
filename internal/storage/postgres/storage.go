@@ -15,7 +15,8 @@ var _ storage.Storage = (*Store)(nil)
 
 // Store реализует интерфейс storage.Storage.
 type Store struct {
-	pool *pgxpool.Pool
+	pool     *pgxpool.Pool
+	migrator *PostgresMigrator
 }
 
 // New - конструктор хранилища.
@@ -38,6 +39,11 @@ func New(dsn string) (*Store, error) {
 	}
 
 	return &Store{pool: pool}, nil
+}
+
+// Migrate запускает миграции БД
+func (s *Store) Migrate(ctx context.Context) error {
+	return s.migrator.RunMigrations(ctx)
 }
 
 // User возвращает реализацию интерфейса UserRepository для Postgres.
