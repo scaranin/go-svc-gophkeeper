@@ -7,6 +7,7 @@ import (
 
 	v1 "go-svc-gophkeeper/gen/go/v1"
 	"go-svc-gophkeeper/internal/app/server"
+	"go-svc-gophkeeper/internal/errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,7 +37,7 @@ func (h *AuthHandler) Register(ctx context.Context, req *v1.RegisterRequest) (*v
 
 	user, token, err := h.authService.Register(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
-		return nil, mapAuthErrorToGRPC(err)
+		return nil, mapAppErrorToGRPC(err)
 	}
 
 	return &v1.RegisterResponse{
@@ -53,7 +54,7 @@ func (h *AuthHandler) Login(ctx context.Context, req *v1.LoginRequest) (*v1.Logi
 
 	user, token, err := h.authService.Login(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
-		return nil, mapAuthErrorToGRPC(err)
+		return nil, mapAppErrorToGRPC(err)
 	}
 
 	expiresAt := time.Now().Add(h.tokenExpiry)
@@ -90,20 +91,30 @@ func validateLoginRequest(req *v1.LoginRequest) error {
 	return nil
 }
 
-// mapAuthErrorToGRPC преобразует ошибки бизнес-логики в gRPC статусы
-func mapAuthErrorToGRPC(err error) error {
+// mapAppErrorToGRPC преобразует ошибки приложения в gRPC статусы
+func mapAppErrorToGRPC(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	switch {
-	case err.Error() == "user already exists":
-		return status.Error(codes.AlreadyExists, "user with this login already exists")
-	case err.Error() == "invalid credentials":
-		return status.Error(codes.Unauthenticated, "invalid login or password")
-	case err.Error() == "login must be between 3 and 50 characters" ||
-		err.Error() == "password must be at least 8 characters":
-		return status.Error(codes.InvalidArgument, err.Error())
+	appErr, ok := err.(*errors.AppError)
+	if !ok {
+		return status.Error(codes.Internal, "internal server error")
+	}
+
+	switch appErr.Code {
+	case "VALIDATION_ERROR", "INVALID_INPUT":
+		return status.Error(codes.InvalidArgument, appErr.Message)
+	case "ALREADY_EXISTS":
+		return status.Error(codes.AlreadyExists, appErr.Message)
+	case "INVALID_CREDENTIALS", "UNAUTHORIZED", "TOKEN_EXPIRED", "TOKEN_INVALID":
+		return status.Error(codes.Unauthenticated, appErr.Message)
+	case "FORBIDDEN":
+		return status.Error(codes.PermissionDenied, appErr.Message)
+	case "NOT_FOUND":
+		return status.Error(codes.NotFound, appErr.Message)
+	case "CONFLICT":
+		return status.Error(codes.FailedPrecondition, appErr.Message)
 	default:
 		return status.Error(codes.Internal, "internal server error")
 	}

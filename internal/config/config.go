@@ -21,7 +21,8 @@ type ServerConfig struct {
 
 // DatabaseConfig содержит настройки подключения к БД
 type DatabaseConfig struct {
-	DSN string `yaml:"dsn" env:"DATABASE_DSN" env-default:"postgres://user:pass@localhost:5432/gophkeeper?sslmode=disable"`
+	DSN            string `yaml:"dsn" env:"DATABASE_DSN" env-default:"postgres://user:pass@localhost:5432/gophkeeper?sslmode=disable"`
+	MigrationsPath string `yaml:"migrations_path" env:"DATABASE_MIGRATIONS_PATH" env-default:"./migrations/postgres"`
 }
 
 // AuthConfig содержит настройки аутентификации

@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
+	"go-svc-gophkeeper/internal/errors"
 	"io"
 )
 
@@ -62,7 +63,7 @@ func (s *EncryptionService) Decrypt(encryptedData []byte) ([]byte, error) {
 	nonce, ciphertext := encryptedData[:nonceSize], encryptedData[nonceSize:]
 	decrypted, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+		return nil, errors.ErrDecryptionFailed
 	}
 
 	return decrypted, nil

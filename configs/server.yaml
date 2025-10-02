@@ -5,6 +5,7 @@ server:
 
 database:
   dsn: "postgres://postgres:admin@localhost:5432/gophkeeper?sslmode=disable"
+  migrations_path: "./migrations/postgres"
 
 auth:
   jwt_secret: "tzoy_zhiv"

@@ -25,13 +25,13 @@ func NewSecretService(secretRepo SecretRepository, encryptor Encryptor) *SecretS
 func (s *SecretService) CreateSecret(ctx context.Context, userID int, secretType models.SecretType, name string, data []byte, metadata *v1.Metadata) (*models.Secret, error) {
 	encryptedData, err := s.encryptor.Encrypt(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt data: %w", err)
+		return nil, err
 	}
 
 	metadataWrapper := models.FromProto(metadata)
 	metadataBytes, err := metadataWrapper.ToBytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize metadata: %w", err)
+		return nil, err
 	}
 
 	secret := &models.Secret{
@@ -45,7 +45,7 @@ func (s *SecretService) CreateSecret(ctx context.Context, userID int, secretType
 
 	secretID, err := s.secretRepo.CreateSecret(ctx, secret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create secret: %w", err)
+		return nil, err
 	}
 
 	secret.ID = secretID
@@ -56,7 +56,7 @@ func (s *SecretService) CreateSecret(ctx context.Context, userID int, secretType
 func (s *SecretService) GetSecret(ctx context.Context, secretID, userID int) (*models.Secret, *v1.Metadata, error) {
 	secret, err := s.secretRepo.GetSecretByID(ctx, secretID, userID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get secret: %w", err)
+		return nil, nil, err
 	}
 
 	if secret == nil {
@@ -65,12 +65,12 @@ func (s *SecretService) GetSecret(ctx context.Context, secretID, userID int) (*m
 
 	decryptedData, err := s.encryptor.Decrypt(secret.EncryptedData)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decrypt data: %w", err)
+		return nil, nil, err
 	}
 
 	var metadataWrapper models.MetadataWrapper
 	if err := metadataWrapper.FromBytes(secret.Metadata); err != nil {
-		return nil, nil, fmt.Errorf("failed to deserialize metadata: %w", err)
+		return nil, nil, err
 	}
 
 	result := *secret
@@ -83,7 +83,7 @@ func (s *SecretService) GetSecret(ctx context.Context, secretID, userID int) (*m
 func (s *SecretService) UpdateSecret(ctx context.Context, secretID, userID int, name string, data []byte, metadata *v1.Metadata, version int) (*models.Secret, error) {
 	currentSecret, err := s.secretRepo.GetSecretByID(ctx, secretID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get secret: %w", err)
+		return nil, err
 	}
 	if currentSecret == nil {
 		return nil, fmt.Errorf("secret not found")
@@ -95,13 +95,13 @@ func (s *SecretService) UpdateSecret(ctx context.Context, secretID, userID int, 
 
 	encryptedData, err := s.encryptor.Encrypt(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt data: %w", err)
+		return nil, err
 	}
 
 	metadataWrapper := models.FromProto(metadata)
 	metadataBytes, err := metadataWrapper.ToBytes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize metadata: %w", err)
+		return nil, err
 	}
 
 	updatedSecret := &models.Secret{
@@ -116,7 +116,7 @@ func (s *SecretService) UpdateSecret(ctx context.Context, secretID, userID int, 
 
 	err = s.secretRepo.UpdateSecret(ctx, updatedSecret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update secret: %w", err)
+		return nil, err
 	}
 
 	return updatedSecret, nil
@@ -126,7 +126,7 @@ func (s *SecretService) UpdateSecret(ctx context.Context, secretID, userID int, 
 func (s *SecretService) DeleteSecret(ctx context.Context, secretID, userID int) error {
 	err := s.secretRepo.DeleteSecret(ctx, secretID, userID)
 	if err != nil {
-		return fmt.Errorf("failed to delete secret: %w", err)
+		return err
 	}
 	return nil
 }

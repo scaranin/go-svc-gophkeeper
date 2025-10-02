@@ -3,8 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"go-svc-gophkeeper/internal/storage"
@@ -19,14 +17,35 @@ type Store struct {
 	migrator *PostgresMigrator
 }
 
-func New(dsn string) (*Store, error) {
+// New инициализирует хранилище Postgres
+func New(dsn, migrationsPath string) (*Store, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	pool, err := NewPool(ctx, dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	migrator, err := NewMigrator(ctx, pool, migrationsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	store := &Store{
+		pool:     pool,
+		migrator: migrator,
+	}
+
+	return store, nil
+}
+
+// NewPool инициализирует пул соединений Postgres
+func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
@@ -37,26 +56,17 @@ func New(dsn string) (*Store, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	_, filename, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Join(filepath.Dir(filename), "../../..")
-	migrationsPath := filepath.Join(projectRoot, "migrations", "postgres")
+	return pool, nil
+}
 
+// NewMigrator инициализирует мигратор Postgres
+func NewMigrator(ctx context.Context, pool *pgxpool.Pool, migrationsPath string) (*PostgresMigrator, error) {
 	migrator := &PostgresMigrator{
 		pool:           pool,
 		migrationsPath: migrationsPath,
 	}
 
-	store := &Store{
-		pool:     pool,
-		migrator: migrator,
-	}
-
-	if err := store.Migrate(ctx); err != nil {
-		store.Close()
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	return store, nil
+	return migrator, nil
 }
 
 // Migrate запускает миграции БД

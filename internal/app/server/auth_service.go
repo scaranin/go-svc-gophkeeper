@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go-svc-gophkeeper/internal/auth"
+	"go-svc-gophkeeper/internal/errors"
 	"go-svc-gophkeeper/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
@@ -26,16 +27,9 @@ func NewAuthService(userRepo UserRepository, jwtManager *auth.JWTManager) *AuthS
 
 // Register регистрация пользователя
 func (s *AuthService) Register(ctx context.Context, login, password string) (*models.User, string, error) {
-	if len(login) < 3 || len(password) < 8 {
-		return nil, "", fmt.Errorf("login min 3 chars, password min 8 chars")
-	}
-
-	existingUser, err := s.userRepo.GetUserByLogin(ctx, login)
+	err := s.ValidateLogoPath(ctx, login, password)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to check user: %w", err)
-	}
-	if existingUser != nil {
-		return nil, "", fmt.Errorf("user already exists")
+		return nil, "", err
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -52,13 +46,13 @@ func (s *AuthService) Register(ctx context.Context, login, password string) (*mo
 
 	userID, err := s.userRepo.CreateUser(ctx, user)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to create user: %w", err)
+		return nil, "", err
 	}
 	user.ID = userID
 
 	token, err := s.jwtManager.GenerateToken(user.ID)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, "", err
 	}
 
 	return user, token, nil
@@ -67,25 +61,25 @@ func (s *AuthService) Register(ctx context.Context, login, password string) (*mo
 // Login авторизация пользователя
 func (s *AuthService) Login(ctx context.Context, login, password string) (*models.User, string, error) {
 	if login == "" || password == "" {
-		return nil, "", fmt.Errorf("login and password required")
+		return nil, "", errors.ErrCredentialsRequired
 	}
 
 	user, err := s.userRepo.GetUserByLogin(ctx, login)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get user: %w", err)
+		return nil, "", err
 	}
 	if user == nil {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", errors.ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", errors.ErrInvalidCredentials
 	}
 
 	token, err := s.jwtManager.GenerateToken(user.ID)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, "", err
 	}
 
 	return user, token, nil
@@ -95,7 +89,28 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (*model
 func (s *AuthService) ValidateToken(token string) (int, error) {
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {
-		return 0, fmt.Errorf("invalid token: %w", err)
+		return 0, err
 	}
 	return claims.UserID, nil
+}
+
+// ValidateLogoPath проверка имени пользователя и пароля
+func (s *AuthService) ValidateLogoPath(ctx context.Context, login, password string) error {
+	if len(login) < 3 {
+		return errors.ErrValidation
+	}
+	if len(password) < 8 {
+		return errors.ErrValidation
+	}
+
+	existingUser, err := s.userRepo.GetUserByLogin(ctx, login)
+	if err != nil {
+		return err
+	}
+
+	if existingUser != nil {
+		return errors.ErrAlreadyExists
+	}
+	return nil
+
 }

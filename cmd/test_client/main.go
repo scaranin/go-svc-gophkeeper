@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 
@@ -12,10 +13,21 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	defaultServerAddress = "localhost:50051"
+	defaultLogin         = "testuser"
+	defaultPassword      = "testderparol"
+)
+
 func main() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	serverAddr := flag.String("server", defaultServerAddress, "Адрес gRPC сервера")
+	login := flag.String("login", defaultLogin, "Логин пользователя")
+	password := flag.String("password", defaultPassword, "Пароль пользователя")
+	flag.Parse()
+
+	conn, err := grpc.NewClient(*serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+		log.Fatalf("Ошибка подключения: %v", err)
 	}
 	defer conn.Close()
 
@@ -26,31 +38,31 @@ func main() {
 
 	fmt.Println("01. Регистрация пользователя")
 	registerResp, err := authClient.Register(ctx, &v1.RegisterRequest{
-		Login:    "testuser",
-		Password: "testderparol",
+		Login:    *login,
+		Password: *password,
 	})
 	if err != nil {
-		log.Printf("Register failed: %v", err)
+		log.Printf("Ошибка регистрации: %v", err)
 	} else {
-		fmt.Printf("Register successful: UserID=%s, Token=%s\n", registerResp.UserId, registerResp.AccessToken)
+		fmt.Printf("Регистрация успешна: UserID=%s, Token=%s\n", registerResp.UserId, registerResp.AccessToken)
 	}
 
-	fmt.Println("02. Логин")
+	fmt.Println("02. Вход в систему")
 	loginResp, err := authClient.Login(ctx, &v1.LoginRequest{
-		Login:    "testuser",
-		Password: "testderparol",
+		Login:    *login,
+		Password: *password,
 	})
 	if err != nil {
-		log.Printf("Login failed: %v", err)
+		log.Printf("Ошибка входа: %v", err)
 		return
 	}
-	fmt.Printf("Login successful: UserID=%s, Token=%s\n", loginResp.UserId, loginResp.AccessToken)
+	fmt.Printf("Вход выполнен успешно: UserID=%s, Token=%s\n", loginResp.UserId, loginResp.AccessToken)
 
 	authCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		"authorization", "Bearer "+loginResp.AccessToken,
 	))
 
-	fmt.Println("03. Добавляем секрет")
+	fmt.Println("03. Добавление секрета")
 	createSecretResp, err := secretClient.CreateSecret(authCtx, &v1.CreateSecretRequest{
 		Type: v1.SecretType_SECRET_TYPE_LOGIN,
 		Name: "Test Login",
@@ -63,22 +75,22 @@ func main() {
 		EncryptedData: []byte("encrypted_login_data_here"),
 	})
 	if err != nil {
-		log.Printf("CreateSecret failed: %v", err)
+		log.Printf("Ошибка создания секрета: %v", err)
 	} else {
-		fmt.Printf("CreateSecret successful: SecretID=%s, Version=%d\n",
+		fmt.Printf("Секрет создан успешно: SecretID=%s, Версия=%d\n",
 			createSecretResp.SecretId, createSecretResp.Version)
 	}
 
-	fmt.Println("04. Получить секреты")
+	fmt.Println("04. Получение списка секретов")
 	listResp, err := secretClient.ListSecrets(authCtx, &v1.ListSecretsRequest{
 		IncludeDeleted: false,
 	})
 	if err != nil {
-		log.Printf("ListSecrets failed: %v", err)
+		log.Printf("Ошибка получения списка секретов: %v", err)
 	} else {
-		fmt.Printf("ListSecrets successful: Found %d secrets\n", len(listResp.Secrets))
+		fmt.Printf("Список секретов получен успешно: найдено %d секретов\n", len(listResp.Secrets))
 		for i, secret := range listResp.Secrets {
-			fmt.Printf("  %d. ID=%s, Type=%s, Name=%s, Version=%d\n",
+			fmt.Printf("  %d. ID=%s, Тип=%s, Имя=%s, Версия=%d\n",
 				i+1, secret.Id, secret.Type, secret.Name, secret.Version)
 		}
 	}
@@ -88,9 +100,9 @@ func main() {
 		LastSync: nil,
 	})
 	if err != nil {
-		log.Printf("Sync failed: %v", err)
+		log.Printf("Ошибка синхронизации: %v", err)
 	} else {
-		fmt.Printf("Sync successful: %d secrets, LastSync=%v\n",
+		fmt.Printf("Синхронизация выполнена успешно: %d секретов, Последняя синхронизация=%v\n",
 			syncResp.SyncState.TotalSecrets, syncResp.SyncState.LastSync.AsTime())
 	}
 }
