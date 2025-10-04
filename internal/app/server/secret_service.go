@@ -6,15 +6,16 @@ import (
 
 	v1 "go-svc-gophkeeper/gen/go/v1"
 	"go-svc-gophkeeper/internal/models"
+	"go-svc-gophkeeper/internal/storage"
 )
 
 type SecretService struct {
-	secretRepo SecretRepository
+	secretRepo storage.SecretRepository
 	encryptor  Encryptor
 }
 
 // NewSecretService создает новый сервис секретов
-func NewSecretService(secretRepo SecretRepository, encryptor Encryptor) *SecretService {
+func NewSecretService(secretRepo storage.SecretRepository, encryptor Encryptor) *SecretService {
 	return &SecretService{
 		secretRepo: secretRepo,
 		encryptor:  encryptor,

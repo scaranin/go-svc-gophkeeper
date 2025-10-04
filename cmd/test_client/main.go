@@ -13,16 +13,10 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const (
-	defaultServerAddress = "localhost:50051"
-	defaultLogin         = "testuser"
-	defaultPassword      = "testderparol"
-)
-
 func main() {
-	serverAddr := flag.String("server", defaultServerAddress, "Адрес gRPC сервера")
-	login := flag.String("login", defaultLogin, "Логин пользователя")
-	password := flag.String("password", defaultPassword, "Пароль пользователя")
+	serverAddr := flag.String("server", "localhost:50051", "Адрес gRPC сервера")
+	login := flag.String("login", "testuser", "Логин пользователя")
+	password := flag.String("password", "testderparol", "Пароль пользователя")
 	flag.Parse()
 
 	conn, err := grpc.NewClient(*serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
