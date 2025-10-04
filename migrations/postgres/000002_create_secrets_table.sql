@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE secrets (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id),
@@ -15,3 +17,9 @@ CREATE INDEX IF NOT EXISTS idx_secrets_user_id ON secrets(user_id);
 CREATE INDEX IF NOT EXISTS idx_secrets_updated_at ON secrets(updated_at);
 CREATE INDEX IF NOT EXISTS idx_secrets_deleted_at ON secrets(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_secrets_user_id_deleted_at ON secrets(user_id, deleted_at);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE secrets;
+-- +goose StatementEnd

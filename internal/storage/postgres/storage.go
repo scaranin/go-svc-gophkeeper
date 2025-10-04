@@ -37,6 +37,11 @@ func New(dsn, migrationsPath string) (*Store, error) {
 		migrator: migrator,
 	}
 
+	if err := store.Migrate(ctx); err != nil {
+		store.Close()
+		return nil, err
+	}
+
 	return store, nil
 }
 
@@ -57,16 +62,6 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
-}
-
-// NewMigrator инициализирует мигратор Postgres
-func NewMigrator(ctx context.Context, pool *pgxpool.Pool, migrationsPath string) (*PostgresMigrator, error) {
-	migrator := &PostgresMigrator{
-		pool:           pool,
-		migrationsPath: migrationsPath,
-	}
-
-	return migrator, nil
 }
 
 // Migrate запускает миграции БД

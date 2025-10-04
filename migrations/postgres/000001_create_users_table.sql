@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     login VARCHAR(255) UNIQUE NOT NULL,
@@ -7,3 +9,9 @@ CREATE TABLE users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_login ON users(login);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE users;
+-- +goose StatementEnd

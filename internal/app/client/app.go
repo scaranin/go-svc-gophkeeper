@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	v1 "go-svc-gophkeeper/gen/go/v1"
@@ -47,18 +48,29 @@ func NewApp(cfg *config.ClientConfig) (*App, error) {
 // ensureDataDir создает директорию для данных, если она не существует
 func (a *App) ensureDataDir() error {
 	dir := a.config.DataDir
-	if len(dir) >= 2 && dir[:2] == "~/" {
+
+	if dir == "~" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return err
 		}
-		dir = filepath.Join(home, dir[2:])
-		a.config.DataDir = dir
+		dir = home
+	} else if strings.HasPrefix(dir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		relativePath := strings.TrimPrefix(dir, "~/")
+		dir = filepath.Join(home, relativePath)
 	}
+
+	dir = filepath.Clean(dir)
+	a.config.DataDir = dir
 
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
+
 	return nil
 }
 

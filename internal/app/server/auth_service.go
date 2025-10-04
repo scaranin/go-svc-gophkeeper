@@ -8,17 +8,18 @@ import (
 	"go-svc-gophkeeper/internal/auth"
 	"go-svc-gophkeeper/internal/errors"
 	"go-svc-gophkeeper/internal/models"
+	"go-svc-gophkeeper/internal/storage"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	userRepo   UserRepository
+	userRepo   storage.UserRepository
 	jwtManager *auth.JWTManager
 }
 
 // NewAuthService создание сервиса авторизации
-func NewAuthService(userRepo UserRepository, jwtManager *auth.JWTManager) *AuthService {
+func NewAuthService(userRepo storage.UserRepository, jwtManager *auth.JWTManager) *AuthService {
 	return &AuthService{
 		userRepo:   userRepo,
 		jwtManager: jwtManager,
@@ -27,7 +28,7 @@ func NewAuthService(userRepo UserRepository, jwtManager *auth.JWTManager) *AuthS
 
 // Register регистрация пользователя
 func (s *AuthService) Register(ctx context.Context, login, password string) (*models.User, string, error) {
-	err := s.ValidateLogoPath(ctx, login, password)
+	err := s.ValidateLoginPath(ctx, login, password)
 	if err != nil {
 		return nil, "", err
 	}
@@ -95,7 +96,7 @@ func (s *AuthService) ValidateToken(token string) (int, error) {
 }
 
 // ValidateLogoPath проверка имени пользователя и пароля
-func (s *AuthService) ValidateLogoPath(ctx context.Context, login, password string) error {
+func (s *AuthService) ValidateLoginPath(ctx context.Context, login, password string) error {
 	if len(login) < 3 {
 		return errors.ErrValidation
 	}

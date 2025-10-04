@@ -2,108 +2,67 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
-// PostgresMigrator обертка для миграции Postgres
+// PostgresMigrator — мигратор для Postgres
 type PostgresMigrator struct {
 	pool           *pgxpool.Pool
 	migrationsPath string
 }
 
-// RunMigrations запускает миграцию при отсутствии таблиц в БД
+// NewMigrator создаёт новый мигратор
+func NewMigrator(ctx context.Context, pool *pgxpool.Pool, migrationsPath string) (*PostgresMigrator, error) {
+	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("migrations directory does not exist: %s", migrationsPath)
+	}
+
+	goose.SetBaseFS(os.DirFS(migrationsPath))
+	goose.SetTableName("goose_migrations")
+	goose.SetVerbose(true)
+
+	return &PostgresMigrator{
+		pool:           pool,
+		migrationsPath: migrationsPath,
+	}, nil
+}
+
+// getSQLDB создаёт *sql.DB из pgxpool
+func (m *PostgresMigrator) getSQLDB() (*sql.DB, error) {
+	connConfig := m.pool.Config().ConnConfig.Copy()
+	sqlDB := stdlib.OpenDB(*connConfig)
+	if err := sqlDB.Ping(); err != nil {
+		sqlDB.Close()
+		return nil, err
+	}
+	return sqlDB, nil
+}
+
+// RunMigrations применяет все миграции
 func (m *PostgresMigrator) RunMigrations(ctx context.Context) error {
-	requiredTables := []string{"users", "secrets"}
-	allTablesExist := true
-
-	query := `SELECT 
-		      EXISTS ( SELECT 1
-			             FROM information_schema.tables 
-			            WHERE table_schema = 'public' 
-			              AND table_name = $1
-					 )`
-
-	for _, table := range requiredTables {
-		var exists bool
-		err := m.pool.QueryRow(ctx, query, table).Scan(&exists)
-
-		if err != nil {
-			return fmt.Errorf("failed to check table %s: %w", table, err)
-		}
-
-		if !exists {
-			allTablesExist = false
-			log.Printf("Table %s does not exist, will apply migrations", table)
-			break
-		}
-	}
-
-	if allTablesExist {
-		log.Println("All required tables exist, skipping migrations")
-		return nil
-	}
-
-	log.Println("Applying database migrations...")
-	return m.applyAllMigrations(ctx)
-}
-
-func (m *PostgresMigrator) applyAllMigrations(ctx context.Context) error {
-	files, err := os.ReadDir(m.migrationsPath)
+	sqlDB, err := m.getSQLDB()
 	if err != nil {
-		return fmt.Errorf("failed to read migrations directory: %w", err)
+		return err
+	}
+	defer sqlDB.Close()
+
+	if version, err := goose.GetDBVersion(sqlDB); err == nil {
+		log.Printf("Current DB version: %d", version)
+	} else {
+		log.Printf("Could not get DB version: %v", err)
 	}
 
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".up.sql") {
-			log.Printf("Applying migration: %s", file.Name())
-
-			content, err := os.ReadFile(filepath.Join(m.migrationsPath, file.Name()))
-			if err != nil {
-				return fmt.Errorf("failed to read migration file %s: %w", file.Name(), err)
-			}
-
-			if _, err := m.pool.Exec(ctx, string(content)); err != nil {
-				return fmt.Errorf("failed to apply migration %s: %w", file.Name(), err)
-			}
-
-			log.Printf("Migration %s applied successfully", file.Name())
-		}
+	if err := goose.Up(sqlDB, "."); err != nil {
+		return err
 	}
 
-	log.Println("All migrations applied successfully")
-	return nil
-}
-
-// CheckSchema проверяет таблицы на схеме
-func (m *PostgresMigrator) CheckSchema(ctx context.Context) error {
-	requiredTables := []string{"users", "secrets"}
-
-	query := `SELECT 
-		      	  EXISTS ( SELECT 1
-			      	         FROM information_schema.tables 
-			        		WHERE table_schema = 'public' 
-			              	  AND table_name   = $1
-					 	 )`
-
-	for _, table := range requiredTables {
-		var exists bool
-		err := m.pool.QueryRow(ctx, query, table).Scan(&exists)
-
-		if err != nil {
-			return fmt.Errorf("failed to check table %s: %w", table, err)
-		}
-
-		if !exists {
-			return fmt.Errorf("required table %s does not exist", table)
-		}
-	}
-
-	log.Println("Database schema verified")
+	log.Println("Migrations applied successfully")
 	return nil
 }
